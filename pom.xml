@@ -17,6 +17,8 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>cloud-tdp-data-interface</name>
+
     <modules>
         <module>data-interface</module>
         <module>cloud-tdp-common</module>
@@ -70,12 +72,6 @@
             <groupId>com.drore.cloud</groupId>
             <artifactId>cloud-sdk</artifactId>
             <version>0.4.9</version>
-        </dependency>
-        <!--tdp公共类接口-->
-        <dependency>
-            <groupId>com.drore.cloud.tdp</groupId>
-            <artifactId>cloud-tdp-common</artifactId>
-            <version>2.0</version>
         </dependency>
     </dependencies>
 

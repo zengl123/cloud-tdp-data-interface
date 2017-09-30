@@ -5,7 +5,6 @@ import com.drore.cloud.sdk.basic.CloudBasicDataSource;
 import com.drore.cloud.sdk.basic.CloudPoolingConnectionManager;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -19,15 +18,14 @@ import org.springframework.stereotype.Component;
  * Project:cloud-tdp-data-interface-v2.0
  */
 @Configuration
-@ConfigurationProperties()
 @PropertySource("classpath:application.properties")
 @Component
 public class DbHandleConfig {
 
     @Value("${cloud_url}")
     private String cloud_url;
-    @Value("${appid}")
-    private String appid;
+    @Value("${appId}")
+    private String appId;
     @Value("${secret}")
     private String secret;
     @Value("${cloud_port}")
@@ -40,7 +38,7 @@ public class DbHandleConfig {
     @Bean(name = "CloudQueryRunner")
     public CloudQueryRunner getCloudQueryRunner() {
         CloudPoolingConnectionManager cloudPoolingConnectionManager = new CloudPoolingConnectionManager();
-        cloudPoolingConnectionManager.setConnection(new CloudBasicConnection(cloud_url, port, appid, secret));
+        cloudPoolingConnectionManager.setConnection(new CloudBasicConnection(cloud_url, port, appId, secret));
         CloudBasicDataSource cloudBasicDataSource = new CloudBasicDataSource();
         cloudBasicDataSource.setCloudPoolingConnectionManager(cloudPoolingConnectionManager);
         CloudQueryRunner cloudQueryRunner = new CloudQueryRunner();

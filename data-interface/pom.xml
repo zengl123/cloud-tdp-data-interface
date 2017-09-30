@@ -12,7 +12,7 @@
 
     <groupId>com.drore.cloud.tdp</groupId>
     <artifactId>data-interface</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>war</packaging>
 
     <name>data-interface</name>
@@ -21,7 +21,6 @@
     <build>
         <!-- 为jar包取名 -->
         <finalName>data-interface</finalName>
-
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
