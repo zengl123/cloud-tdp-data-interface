@@ -13,4 +13,19 @@
     <version>1.0</version>
     <packaging>jar</packaging>
 
+    <dependencies>
+        <!-- 实体类自动生成getting和setting方法,以及equals,hashCode,toString等-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.16</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baidu</groupId>
+            <artifactId>ueditor-json</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+    </dependencies>
+
+
 </project>

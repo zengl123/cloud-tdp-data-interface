@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <!--父pom-->
     <parent>
         <groupId>com.drore.cloud.tdp</groupId>
@@ -18,9 +19,20 @@
     <name>data-interface</name>
     <description>Demo project for Spring Boot</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.drore.cloud.tdp</groupId>
+            <artifactId>cloud-tdp-common</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drore.cloud.tdp</groupId>
+            <artifactId>cloud-tdp-camera-hikvision7600</artifactId>
+            <version>1.0</version>
+        </dependency>
+    </dependencies>
     <build>
-        <!-- 为jar包取名 -->
-        <finalName>data-interface</finalName>
+        <finalName>data-interface</finalName><!-- 为jar包取名 -->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
