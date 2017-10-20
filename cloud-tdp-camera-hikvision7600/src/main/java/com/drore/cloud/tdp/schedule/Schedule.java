@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
  * @Created 2017/9/25  15:09.
  */
 @Component
-@Configuration
 @PropertySource("classpath:schedule.properties")
 public class Schedule {
     @Autowired

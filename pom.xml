@@ -12,8 +12,8 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.drore.cloud.tdp</groupId>
     <artifactId>cloud-tdp-data-interface</artifactId>
+    <groupId>com.drore.cloud.tdp</groupId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -23,6 +23,9 @@
         <module>data-interface</module>
         <module>cloud-tdp-common</module>
         <module>cloud-tdp-camera-hikvision7600</module>
+        <module>cloud-tdp-hikvision-mq7600</module>
+        <module>cloud-tdp-ticket-shenda-v1</module>
+        <module>cloud-tdp-camera-hikvision9600</module>
     </modules>
     <!-- 设定除中央仓库(repo1.maven.org/maven2/)外的其他仓库,按设定顺序进行查找.-->
     <repositories>
@@ -46,11 +49,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <optional>true</optional>
         </dependency>
@@ -67,12 +65,23 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
+        <!-- 实体类自动生成getting和setting方法,以及equals,hashCode,toString等-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.16</version>
+        </dependency>
         <!--第三方jar-->
         <!--云数据中心-sdk-->
         <dependency>
             <groupId>com.drore.cloud</groupId>
             <artifactId>cloud-sdk</artifactId>
             <version>0.4.9</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drore.cloud.tdp</groupId>
+            <artifactId>cloud-tdp-common</artifactId>
+            <version>1.0</version>
         </dependency>
     </dependencies>
 

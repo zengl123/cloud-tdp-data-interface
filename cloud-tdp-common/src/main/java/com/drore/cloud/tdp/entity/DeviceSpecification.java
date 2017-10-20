@@ -11,9 +11,9 @@ import lombok.Data;
  * @Created 2017/9/30  13:25.
  */
 @Data
-public class DeviceSpecification {
-    private String id;
+public class DeviceSpecification extends BaseEntity {
     @SerializedName(value = "factory_model_name")
     private String factoryModelName;
+    @SerializedName(value = "config")
     private String config;
 }

@@ -14,10 +14,15 @@ import com.drore.cloud.sdk.client.CloudQueryRunner;
  */
 public class CloudQueryRunnerUtil {
 
-    static String cloud_url = ConfigUtil.getConfig().getString("cloud_url");
-    static Integer port = Integer.valueOf(ConfigUtil.getConfig().getString("cloud_port"));
-    static String appId = ConfigUtil.getConfig().getString("appId");
-    static String secret = ConfigUtil.getConfig().getString("secret");
+    static String cloud_url = "y.drore.com";
+    //static String cloud_url = "192.168.10.48";
+    static Integer port = 80;
+    //static String appId = "xxsdhyaaQpnrD4";
+    //static String secret = "QKLC9qbO";
+//    static String appId = "ccgkiP9UOUcn";
+//    static String secret = "0OtuodpQ";
+    static String appId = "fourLpSfZuBc";
+    static String secret = "VmDGhgCc";
 
     public static CloudQueryRunner getCloudQueryRunner() {
         CloudPoolingConnectionManager cloudPoolingConnectionManager = new CloudPoolingConnectionManager();
@@ -28,4 +33,5 @@ public class CloudQueryRunnerUtil {
         cloudQueryRunner.setDataSource(cloudBasicDataSource);
         return cloudQueryRunner;
     }
+
 }

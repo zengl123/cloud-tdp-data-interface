@@ -14,20 +14,30 @@
     <groupId>com.drore.cloud.tdp</groupId>
     <artifactId>data-interface</artifactId>
     <version>1.0</version>
-    <packaging>war</packaging>
+    <!--<packaging>war</packaging>-->
 
     <name>data-interface</name>
     <description>Demo project for Spring Boot</description>
 
     <dependencies>
-        <dependency>
+        <!--<dependency>
             <groupId>com.drore.cloud.tdp</groupId>
             <artifactId>cloud-tdp-common</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>com.drore.cloud.tdp</groupId>
-            <artifactId>cloud-tdp-camera-hikvision7600</artifactId>
+            <artifactId>cloud-tdp-hikvision-mq7600</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+       <!-- <dependency>
+            <groupId>com.drore.cloud.tdp</groupId>
+            <artifactId>cloud-tdp-ticket-shenda-v1</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+        <dependency>
+            <groupId>com.drore.cloud.tdp</groupId>
+            <artifactId>cloud-tdp-camera-hikvision9600</artifactId>
             <version>1.0</version>
         </dependency>
     </dependencies>

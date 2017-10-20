@@ -36,6 +36,11 @@ public class DateTimeUtil {
 
     //TODO//////////////////////基本转换///////////////////////////////基本转换/////////////////////////////////////////
 
+    public static String getNowTime(){
+        DateTimeFormatter f = getDateFormat(YYYY_MM_DD_HH_MM_SS);
+        String now = LocalDateTime.now().withNano(0).format(f);
+        return now;
+    }
     /**
      * data转string
      *
@@ -128,6 +133,19 @@ public class DateTimeUtil {
     }
 
     /**
+     * 获取n秒前/后时间
+     * @param time
+     * @param second
+     * @return 返回格式 yyyy-MM-dd HH:mm:ss
+     */
+    public static String timeAddMinusSeconds(String time, int second) {
+        DateTimeFormatter f = DateTimeFormatter.ofPattern(YYYY_MM_DD_HH_MM_SS);
+        LocalDateTime localDateTime = second > 0 ? LocalDateTime.parse(time, f).plusSeconds(second) : LocalDateTime.parse(time, f).minusSeconds(Math.abs(second));
+        return localDateTime.format(f);
+    }
+
+
+    /**
      * 获取n分钟前/后时间字符串
      * 返回格式：HH_MM_SS/HH_MM
      *
@@ -140,6 +158,20 @@ public class DateTimeUtil {
         LocalTime nowLocalTime = minute >= 0 ? localTime.plusMinutes(minute) : localTime.minusMinutes(Math.abs(minute));
         return nowLocalTime.toString();
     }
+
+    /**
+     * 获取n分钟前/后时间字符串
+     * @param time
+     * @param minute 分钟数
+     * @param pattern 格式
+     * @return
+     */
+    public static String timeAddMinusMinutes(String time, int minute,String pattern) {
+        DateTimeFormatter f = DateTimeFormatter.ofPattern(pattern);
+        LocalDateTime localDateTime = minute > 0 ? LocalDateTime.parse(time, f).plusMinutes(minute) : LocalDateTime.parse(time, f).minusMinutes(Math.abs(minute));
+        return localDateTime.format(f);
+    }
+
 
     /**
      * 获取n小时前/后的时间字符串
@@ -167,6 +199,19 @@ public class DateTimeUtil {
         LocalDate localDate = LocalDate.parse(date.trim(), getDateFormat(YYYY_MM_DD));
         LocalDate newDate = day >= 0 ? localDate.plusDays(day) : localDate.minusDays(Math.abs(day));
         return newDate.toString();
+    }
+
+    /**
+     *  获取n天前/后日期
+     * @param date 日期
+     * @param day 天数
+     * @param pattern 格式
+     * @return
+     */
+    public static String dateAddMinusDays(String date, int day,String pattern) {
+        DateTimeFormatter f = DateTimeFormatter.ofPattern(pattern);
+        LocalDateTime localDateTime = day > 0 ? LocalDateTime.parse(date, f).plusDays(day) : LocalDateTime.parse(date, f).minusDays(Math.abs(day));
+        return localDateTime.format(f);
     }
 
     /**
@@ -294,7 +339,6 @@ public class DateTimeUtil {
     }
 
 
-
     public static void main(String[] args) {
         //System.out.println("dateToStr() = " + dateToStr(new Date(),"yyyy-MM-dd HH:mm:ss"));
         //System.out.println("strToDate() = " + strToDate("2017-09-29","yyyy-MM-dd HH"));
@@ -312,7 +356,19 @@ public class DateTimeUtil {
         //System.out.println("getYearFirstDay() = " + getYearFirstDay(2017));
         //System.out.println("listYearMonth() = " + listYearMonth("2017-09","2017-12"));
         //System.out.println("遍历获取两个日期之间天数集合:listDate() = " + listDate("2017-09-01", "2017-09-30"));
-        System.out.println("比较时间字符串大小:compareDate() = " + compareDate("2016-09-18","2017-09-02"));
+        //System.out.println("比较时间字符串大小:compareDate() = " + compareDate("2016-09-18", "2017-09-02"));
+        //String s = msToDateStr("1507694246000", YYYY_MM_DD_HH_MM_SS);
+        //System.out.println("s = " + s);
 
+
+        String s = timeAddMinusMinutes("2017/01/09 12:09:10", 1,"yyyy/MM/dd HH:mm:ss");
+        System.out.println("s = " + s);
+        String s1 = timeAddMinusSeconds("2017-01-09 12:09:10", 10);
+
+        System.out.println("s1 = " + s1);
+
+        String s2 = dateAddMinusDays("2017-01-09 12:09:10", 1, "yyyy-MM-dd HH:mm:ss");
+        System.out.println("s2 = " + s2);
+        System.out.println("getNowTime() = " + getNowTime());
     }
 }
