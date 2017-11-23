@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
 import com.drore.cloud.sdk.common.resp.RestMessage;
 import com.drore.cloud.tdp.entity.EventNotify;
-import com.drore.cloud.tdp.entity.mq.CameraTrafficInfo;
+import com.drore.cloud.tdp.entity.traffic.CameraTrafficInfo;
 import com.drore.cloud.tdp.utils.HttpClientUtil;
 import com.drore.cloud.tdp.utils.QueryUtil;
 import org.apache.commons.lang.StringUtils;
@@ -86,7 +86,7 @@ public class CameraEventNotifyServiceImpl {
             cameraTrafficInfo.setOrgIndex(eventNotify.getOrgIndex());
             cameraTrafficInfo.setObjectIndexCode(eventNotify.getObjectIndexCode());
             cameraTrafficInfo.setStartTime(eventNotify.getStartTime());
-            cameraTrafficInfo.setStopTime(eventNotify.getStopTime());
+            //cameraTrafficInfo.setStopTime(eventNotify.getStopTime());
             cameraTrafficInfo.setStatus(eventNotify.getStatus());
             //cameraTrafficInfo.setEventLevel(eventNotify.getEventLevel());
             //cameraTrafficInfo.setAbsTime(eventNotify.getExtInfo().getExtEventInfo().getAbsTime());

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -87,6 +86,7 @@ public class ConsumerHikMessage implements CommandLineRunner {
                 String eventType = eventNotify.getEventType();
                 switch (eventType) {
                     case "327681": //边防报警
+                    case "327687":
                         cameraTraffic.cameraBorder(eventNotify);
                         break;
                     case "131616"://监控客流
