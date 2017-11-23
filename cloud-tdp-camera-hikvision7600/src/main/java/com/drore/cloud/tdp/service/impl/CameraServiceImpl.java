@@ -4,19 +4,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
-import com.drore.cloud.sdk.common.resp.RestMessage;
-import com.drore.cloud.sdk.domain.Pagination;
+import com.drore.cloud.tdp.common.camera.CameraCommon;
 import com.drore.cloud.tdp.entity.CameraDeviceThird;
 import com.drore.cloud.tdp.entity.CameraGroupThird;
 import com.drore.cloud.tdp.entity.camera.CameraDto;
 import com.drore.cloud.tdp.entity.camera.CameraGroup;
-import com.drore.cloud.tdp.exception.BusinessException;
 import com.drore.cloud.tdp.service.ICommonServiceStub;
 import com.drore.cloud.tdp.tables.camera.CameraTables;
 import com.drore.cloud.tdp.utils.DateTimeUtil;
 import com.drore.cloud.tdp.utils.QueryUtil;
 import com.drore.cloud.tdp.utils.XmlUtil;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 描述:海康监控7600数据同步
@@ -39,12 +34,11 @@ import java.util.Map;
 public class CameraServiceImpl {
 
     private static Logger LOGGER = LoggerFactory.getLogger(CameraServiceImpl.class);
-    @Autowired
-    private CloudQueryRunner runner;
+
     @Autowired
     private QueryUtil queryUtil;
     @Autowired
-    private CameraTables cameraTables;
+    private CameraCommon cameraCommon;
 
     private String url;//接口请求地址
     private Integer resType1;
@@ -61,23 +55,16 @@ public class CameraServiceImpl {
     }
 
     public void syncCamera() {
-        if (null == url) {
-            try {
-                initMethod();
-            } catch (Exception e) {
-                LOGGER.error("获取监控配置参数异常,error=", e);
-                return;
-            }
+        try {
+            initMethod();
+        } catch (Exception e) {
+            LOGGER.error("获取监控配置参数异常,error=", e);
+            return;
         }
-        syncCameraGroup();//同步监控列表
-        syncCameraDevice();//同步监控点
-
-    }
-
-    /**
-     * 同步监控列表
-     */
-    private void syncCameraGroup() {
+        List<CameraDto> addCamera = new ArrayList<>();
+        List<CameraDto> updateCamera = new ArrayList<>();
+        List<CameraGroup> addCameraGroup = new ArrayList<>();
+        List<CameraGroup> updateCameraGroup = new ArrayList<>();
         ICommonServiceStub.GetAllResourceDetailResponse dt;
         try {
             ICommonServiceStub is = new ICommonServiceStub(url);
@@ -91,7 +78,6 @@ public class CameraServiceImpl {
         }
         String responseResult = dt.get_return();
         JSONObject objectResponse = XmlUtil.xml2json(responseResult);
-        LOGGER.info("监控列表：" + objectResponse);
         JSONArray row;
         try {
             row = objectResponse.getJSONObject("table").getJSONObject("rows").getJSONArray("row");
@@ -99,40 +85,9 @@ public class CameraServiceImpl {
             LOGGER.error("获取监控列表数据异常,error=", e);
             return;
         }
-        List<CameraGroup> addCameraGroup = new ArrayList<>();
-        List<CameraGroup> updateCameraGroup = new ArrayList<>();
         row.stream().forEach(object -> {
-            CameraGroup cameraGroup = new CameraGroup();
             CameraGroupThird cameraGroupThird = JSON.toJavaObject((JSON) object, CameraGroupThird.class);
-            Integer iid = cameraGroupThird.getIid();
-            String id = queryUtil.checkRepeat(CameraTables.CAMERA_GROUP, "region_id", iid);
-            cameraGroup.setCameraListName(cameraGroupThird.getOrgName());
-            cameraGroup.setCameraListNo(iid);
-            cameraGroup.setIndexCode(cameraGroupThird.getIndexCode());
-            if (null == id) {
-                addCameraGroup.add(cameraGroup);
-            } else {
-                cameraGroup.setId(id);
-                cameraGroup.setModifiedTime(DateTimeUtil.getNowTime());
-                updateCameraGroup.add(cameraGroup);
-            }
-        });
-        cameraTables.saveOrUpdateCameraGroup(addCameraGroup, updateCameraGroup);
-    }
-
-    /**
-     * 同步监控点
-     */
-
-    private void syncCameraDevice() {
-        List<CameraGroup> allCameraGroup = getAllCameraGroup();
-        if (null == allCameraGroup) {
-            return;
-        }
-        List<CameraDto> addCamera = new ArrayList<>();
-        List<CameraDto> updateCamera = new ArrayList<>();
-        allCameraGroup.stream().forEach(cameraGroup -> {
-            String orgCode = cameraGroup.getIndexCode();
+            String orgCode = cameraGroupThird.getIndexCode();
             ICommonServiceStub.GetAllResourceDetailByOrgResponse rt;//获取指定组织下全部资源
             try {
                 ICommonServiceStub is = new ICommonServiceStub(url);
@@ -145,57 +100,81 @@ public class CameraServiceImpl {
                 LOGGER.error("GetAllResourceDetailByOrg接口请求异常,error=", e);
                 return;
             }
-            String responseResult = rt.get_return();
-            JSONObject objectResponse = XmlUtil.xml2json(responseResult);
-            LOGGER.info("监控点：" + objectResponse);
-            JSONArray row;
+            String responseResult1 = rt.get_return();
+            JSONObject objectResponse1 = XmlUtil.xml2json(responseResult1);
+            JSONArray row1;
             try {
-                row = objectResponse.getJSONObject("table").getJSONObject("rows").getJSONArray("row");
+                row1 = objectResponse1.getJSONObject("table").getJSONObject("rows").getJSONArray("row");
             } catch (Exception e) {
                 LOGGER.error("获取监控点数据异常,error=", e);
                 return;
             }
-            row.stream().forEach(object -> {
+            CameraGroup cameraGroup = new CameraGroup();
+            Integer iid = cameraGroupThird.getIid();
+            String id;
+            try {
+                id = queryUtil.checkRepeat(CameraTables.CAMERA_GROUP, "region_id", iid);
+            } catch (Exception e) {
+                LOGGER.error("checkRepeat() 异常,error=", e);
+                return;
+            }
+            cameraGroup.setCameraListName(cameraGroupThird.getOrgName());
+            cameraGroup.setCameraListNo(iid);
+            cameraGroup.setIndexCode(cameraGroupThird.getIndexCode());
+            if (null == id) {
+                addCameraGroup.add(cameraGroup);
+            } else {
+                cameraGroup.setId(id);
+                cameraGroup.setModifiedTime(DateTimeUtil.getNowTime());
+                updateCameraGroup.add(cameraGroup);
+            }
+            row1.stream().forEach(object1 -> {
                 CameraDto cameraDto = new CameraDto();
-                CameraDeviceThird cameraDtoThird = JSON.toJavaObject((JSON) object, CameraDeviceThird.class);
-                Integer iid = cameraDtoThird.getIid();
-                cameraDto.setDeviceId(iid);
+                CameraDeviceThird cameraDtoThird = JSON.toJavaObject((JSON) object1, CameraDeviceThird.class);
+                Integer iid1 = cameraDtoThird.getIid();
+                cameraDto.setDeviceId(iid1);
                 cameraDto.setCameraListId(cameraDtoThird.getOrgId());
                 cameraDto.setIndexCode(cameraDtoThird.getIndexCode());
                 cameraDto.setIpAddress(cameraDtoThird.getDeviceIp());
                 cameraDto.setNetworkPort(cameraDtoThird.getDevicePort());
-                cameraDto.setChannelNo(cameraDtoThird.getChannelNo());
-                cameraDto.setCameraName(cameraDtoThird.getName());
+                Integer channelNo = cameraDtoThird.getChannelNo();
+                if (channelNo > 32) {
+                    channelNo -= 32;
+                }
+                cameraDto.setChannelNo(channelNo);
+                String name = cameraDtoThird.getName();
+                cameraDto.setCameraName(name);
+                if (name.split("_").length > 1) {
+                    Integer sort = Integer.parseInt(name.split("_")[1]);
+                    cameraDto.setSort(sort);
+                }
                 cameraDto.setUserName(cameraDtoThird.getCreator());
-                String id = queryUtil.checkRepeat(CameraTables.CAMERA_DEVICE, "device_id", iid);
-                if (null == id) {
+                String id1;
+                try {
+                    id1 = queryUtil.checkRepeat(CameraTables.CAMERA_DEVICE, "device_id", iid);
+                } catch (Exception e) {
+                    LOGGER.error("checkRepeat() 异常,error=", e);
+                    return;
+                }
+                if (null == id1) {
                     addCamera.add(cameraDto);
                 } else {
-                    cameraDto.setId(id);
+                    cameraDto.setId(id1);
                     cameraDto.setModifiedTime(DateTimeUtil.getNowTime());
                     updateCamera.add(cameraDto);
                 }
             });
         });
-        cameraTables.saveOrUpdateCameraDevice(addCamera, updateCamera);
-    }
-
-    /**
-     * 获取所有监控列表
-     */
-    private List<CameraGroup> getAllCameraGroup() {
-        List<CameraGroup> cameraGroups = null;
         try {
-            Pagination<CameraGroup> cameraGroupPagination = runner.queryListByExample(CameraGroup.class, CameraTables.CAMERA_GROUP, 1, Integer.MAX_VALUE);
-            if (cameraGroupPagination.getCount() > 0) {
-                cameraGroups = cameraGroupPagination.getData();
-            } else {
-                LOGGER.info("监控列表数据不存在,cameraGroupPagination=" + cameraGroupPagination);
-            }
+            cameraCommon.saveOrUpdateCameraGroup(addCameraGroup, updateCameraGroup);
         } catch (Exception e) {
-            LOGGER.error("获取监控列表数据异常,error=", e);
+            LOGGER.error("监控7600列表新增|更新异常,error=", e);
         }
-        return cameraGroups;
+        try {
+            cameraCommon.saveOrUpdateCameraDevice(addCamera, updateCamera);
+        } catch (Exception e) {
+            LOGGER.error("监控7600设备新增|更新异常,error=", e);
+        }
     }
 }
 

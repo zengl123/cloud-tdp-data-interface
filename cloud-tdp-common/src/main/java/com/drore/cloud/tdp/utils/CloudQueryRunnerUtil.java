@@ -4,6 +4,9 @@ import com.drore.cloud.sdk.basic.CloudBasicConnection;
 import com.drore.cloud.sdk.basic.CloudBasicDataSource;
 import com.drore.cloud.sdk.basic.CloudPoolingConnectionManager;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
+import com.drore.cloud.sdk.domain.Pagination;
+
+import java.util.Map;
 
 /**
  * 描述:
@@ -32,6 +35,13 @@ public class CloudQueryRunnerUtil {
         CloudQueryRunner cloudQueryRunner = new CloudQueryRunner();
         cloudQueryRunner.setDataSource(cloudBasicDataSource);
         return cloudQueryRunner;
+    }
+
+
+    public static void main(String[] args) {
+        CloudQueryRunner runner = getCloudQueryRunner();
+        Pagination<Map> pagination = runner.queryListByExample("device_specifications");
+        System.out.println("pagination = " + pagination.getData());
     }
 
 }

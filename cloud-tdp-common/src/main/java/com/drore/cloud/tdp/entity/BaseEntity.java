@@ -16,4 +16,6 @@ public class BaseEntity {
     private String id;
     @JSONField(name = "modified_time")
     private String modifiedTime;
+    @JSONField(name = "sort")
+    private Integer sort;
 }

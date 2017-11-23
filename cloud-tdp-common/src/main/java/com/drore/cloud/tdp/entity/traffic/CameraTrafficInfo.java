@@ -1,4 +1,4 @@
-package com.drore.cloud.tdp.entity.mq;
+package com.drore.cloud.tdp.entity.traffic;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
@@ -46,4 +46,6 @@ public class CameraTrafficInfo {
     private Integer enterNum;//进入人数
     @JSONField(name = "leavenum")
     private Integer leaveNum;//离开人数
+    @JSONField(name = "FomIn")
+    private Integer fromIn;
 }

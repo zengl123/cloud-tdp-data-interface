@@ -3,12 +3,12 @@ package com.drore.cloud.tdp.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.drore.cloud.sdk.client.CloudQueryRunner;
-import com.drore.cloud.sdk.common.resp.RestMessage;
 import com.drore.cloud.sdk.domain.Pagination;
-import com.drore.cloud.sdk.domain.util.RequestExample;
+import com.drore.cloud.tdp.common.ticket.TicketCommon;
 import com.drore.cloud.tdp.entity.*;
 import com.drore.cloud.tdp.entity.ticket.CheckTicket;
 import com.drore.cloud.tdp.entity.ticket.SaleTicket;
+import com.drore.cloud.tdp.tables.ticket.TicketTables;
 import com.drore.cloud.tdp.util.SignUtil;
 import com.drore.cloud.tdp.utils.DateTimeUtil;
 import com.drore.cloud.tdp.utils.HttpClientUtil;
@@ -19,9 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,35 +43,47 @@ public class TicketServiceImpl {
     private static String appKey;
     private static String areaCode;
 
-    //private static CloudQueryRunner runner = CloudQueryRunnerUtil.getCloudQueryRunner();
     @Autowired
     private CloudQueryRunner runner;
+    @Autowired
+    private TicketCommon ticketCommon;
+    @Autowired
+    private QueryUtil queryUtil;
 
-    private static final String SCENIC_TABLE = "scenics_info";
-    private static final String SPOT_TABLE = "spot_info";
-    private static final String SALE_TICKET_TABLE = "third_ticket";
-    private static final String CHECK_TICKET_TABLE = "third_check_ticket";
-
-    private static final String BEGIN_TIME = "2017-10-15 00:00:00";
+    private static final String BEGIN_TIME = "2017-10-23 00:00:00";
 
     /**
      * 获取深大票务配置参数
      */
-    static {
+    private void initMethod() {
         String factoryModelName = "shenDaTicketV1_0_2";
-        JSONObject config = QueryUtil.queryConfigByFactoryModelName(factoryModelName);
-        try {
-            appCode = config.getString("appCode");
-            host = config.getString("url");
-            method = config.getString("method");
-            appKey = config.getString("appKey");
-            areaCode = config.getString("areaCode");
-        } catch (Exception e) {
-            LOGGER.error("获取深大票务配置参数异常,error=", e);
+        JSONObject config = queryUtil.queryConfigByFactoryModelName(factoryModelName);
+        appCode = config.getString("appCode");
+        host = config.getString("url");
+        method = config.getString("method");
+        appKey = config.getString("appKey");
+        areaCode = config.getString("areaCode");
+    }
+
+    private Boolean checkParam() {
+        if (null == host) {
+            try {
+                initMethod();
+                return true;
+            } catch (Exception e) {
+                LOGGER.error("获取深大票务配置参数异常,error=", e);
+                return false;
+            }
+        } else {
+            return true;
         }
     }
 
     public void syncScenicArea() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<ScenicArea> addScenic = new ArrayList<>();
         List<ScenicArea> updateScenic = new ArrayList<>();
         Map param = new HashMap();
@@ -89,7 +99,7 @@ public class TicketServiceImpl {
                 ScenicThird scenicThird = JSONObject.toJavaObject((JSON) object, ScenicThird.class);
                 return scenicThird;
             }).collect(Collectors.toList()).stream().forEach(scenicThird -> {
-                String id = QueryUtil.checkRepeat(SCENIC_TABLE, "scenic_code", scenicThird.getGroupCode());
+                String id = queryUtil.checkRepeat(TicketTables.TICKET_SCENIC_TABLE, "scenic_no", scenicThird.getGroupCode());
                 ScenicArea scenicArea = new ScenicArea();
                 scenicArea.setScenicName(scenicThird.getGroupName());
                 scenicArea.setScenicNo(scenicThird.getGroupCode());
@@ -97,40 +107,25 @@ public class TicketServiceImpl {
                     addScenic.add(scenicArea);
                 } else {
                     scenicArea.setId(id);
-                    scenicArea.setModifiedTime(LocalDateTime.now().withNano(0).toString());
+                    scenicArea.setModifiedTime(DateTimeUtil.getNowTime());
                     updateScenic.add(scenicArea);
                 }
             });
         } catch (Exception e) {
             LOGGER.error("获取接口数据异常,error=", e);
         }
-        try {
-            if (addScenic.size() > 0) {
-                RestMessage insert = runner.insertBatch(SCENIC_TABLE, JSON.toJSON(addScenic));
-                if (insert != null) {
-                    LOGGER.info("景区信息新增成功;scenicList=" + addScenic);
-                }
-            } else {
-                LOGGER.info("没有新增景区信息;");
-            }
-            if (updateScenic.size() > 0) {
-                RestMessage update = runner.updateBatch(SCENIC_TABLE, JSON.toJSON(updateScenic));
-                if (update != null) {
-                    LOGGER.info("景区信息更新成功;scenicList=" + updateScenic);
-                }
-            } else {
-                LOGGER.info("没有景区信息需要更新;");
-            }
-        } catch (Exception e) {
-            LOGGER.error("数据存储异常,error=", e);
-        }
+        ticketCommon.saveOrUpdateScenic(addScenic, updateScenic);
     }
 
 
     public void syncSpotArea() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<SpotArea> addSpot = new ArrayList<>();
         List<SpotArea> updateSpot = new ArrayList<>();
-        List<ScenicArea> scenicAreas = getAllScenicArea();
+        List<ScenicArea> scenicAreas = ticketCommon.getAllScenicArea();
         if (null == scenicAreas) {
             return;
         }
@@ -149,7 +144,7 @@ public class TicketServiceImpl {
                     SpotThird spotThird = JSON.toJavaObject((JSON) object, SpotThird.class);
                     return spotThird;
                 }).collect(Collectors.toList()).stream().forEach(spotThird -> {
-                    String id = QueryUtil.checkRepeat(SPOT_TABLE, "spot_code", spotThird.getParkCode());
+                    String id = queryUtil.checkRepeat(TicketTables.TICKET_SPOT_TABLE, "spot_no", spotThird.getParkCode());
                     SpotArea spotArea = new SpotArea();
                     spotArea.setSpotName(spotThird.getParkFullName());
                     spotArea.setSpotNo(spotThird.getParkCode());
@@ -158,47 +153,28 @@ public class TicketServiceImpl {
                         addSpot.add(spotArea);
                     } else {
                         spotArea.setId(id);
-                        spotArea.setModifiedTime(LocalDateTime.now().withNano(0).toString());
+                        spotArea.setModifiedTime(DateTimeUtil.getNowTime());
                         updateSpot.add(spotArea);
                     }
                 });
             } catch (Exception e) {
                 LOGGER.error("获取接口数据异常,error=", e);
             }
-            try {
-                if (addSpot.size() > 0) {
-                    RestMessage insert = runner.insertBatch(SPOT_TABLE, JSON.toJSON(addSpot));
-                    if (null != insert) {
-                        LOGGER.info("景点信息新增成功;spotList=" + addSpot);
-                    } else {
-                        LOGGER.info("景点信息新增失败;restMessage=" + insert);
-                    }
-                } else {
-                    LOGGER.info("没有新增景点信息;");
-                }
-                if (updateSpot.size() > 0) {
-                    RestMessage update = runner.updateBatch(SPOT_TABLE, JSON.toJSON(updateSpot));
-                    if (null != update) {
-                        LOGGER.info("景点信息更新成功;spotList=" + updateSpot);
-                    } else {
-                        LOGGER.info("景点信息更新失败;restMessage=" + update);
-                    }
-                } else {
-                    LOGGER.info("没有景点信息需要更新;");
-                }
-            } catch (Exception e) {
-                LOGGER.error("数据存储异常,error=", e);
-            }
         });
+        ticketCommon.saveOrUpdateSpot(addSpot, updateSpot);
     }
 
     /**
      * 同步景点售票
      */
     public void syncSpotSaleInfo() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<SaleTicket> addTicket = new ArrayList<>();
         List<SaleTicket> updateTicket = new ArrayList<>();
-        List<SpotArea> allSpotArea = getAllSpotArea();
+        List<SpotArea> allSpotArea = ticketCommon.getAllSpotArea();
         if (null == allSpotArea) {
             return;
         }
@@ -227,7 +203,7 @@ public class TicketServiceImpl {
             term.put("appCode", appCode);
             String path = "getSpotsSaleInfo.htm";
             JSONObject response = getResponse(term, path);
-            System.out.println("spot=" + spotArea.getSpotName() + ",SpotsSaleInfoResponse = " + response);
+            LOGGER.info("spot=" + spotArea.getSpotName() + ",SpotsSaleInfoResponse = " + response);
             ThirdData thirdData = JSONObject.toJavaObject(response, ThirdData.class);
             if (!"SUCCESS".equals(thirdData.getResult())) {
                 return;
@@ -239,54 +215,36 @@ public class TicketServiceImpl {
                 String tradeDetailId = saleTicketThird.getTradeDetailId();
                 String id;
                 try {
-                    id = QueryUtil.checkRepeat(SALE_TICKET_TABLE, "detailId", tradeDetailId);
+                    id = queryUtil.checkRepeat(TicketTables.SALE_TICKET_TABLE, "sale_detail_id", tradeDetailId);
                 } catch (Exception e) {
+                    LOGGER.error("syncSpotSaleInfo-checkRepeat()异常,error=", e);
                     return;
                 }
                 SaleTicket saleTicket = new SaleTicket();
-                saleTicket.setScenicAreaCode(saleTicketThird.getScenicAreaCode());
-                saleTicket.setParkFullName(saleTicketThird.getParkFullName());
-                saleTicket.setClientType(saleTicketThird.getClientType());
+                saleTicket.setScenicName(saleTicketThird.getScenicAreaCode());
+                saleTicket.setSpotName(saleTicketThird.getParkFullName());
+                saleTicket.setTouristType(saleTicketThird.getClientType());
                 saleTicket.setTicketModelName(saleTicketThird.getTicketModelName());
-                saleTicket.setDictDetailName(saleTicketThird.getDictDetailName());
-                saleTicket.setTakeTicketPlace(saleTicketThird.getTakeTicketPlace());
+                saleTicket.setTicketKindName(saleTicketThird.getDictDetailName());
+                saleTicket.setSaleTicketPlace(saleTicketThird.getTakeTicketPlace());
                 saleTicket.setOperatorName(saleTicketThird.getOperatorName());
-                saleTicket.setTradeDate(DateTimeUtil.msToDateStr(saleTicketThird.getTradeDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
-                saleTicket.setTicketNoCount(saleTicketThird.getTicketNoCount());
-                saleTicket.setTicketModelPrice(saleTicketThird.getTicketModelPrice());
-                saleTicket.setPaySum(saleTicketThird.getPaySum());
-                saleTicket.setBillType(saleTicketThird.getBillType());
-                saleTicket.setAreaName(saleTicketThird.getAreaName());
+                saleTicket.setSaleTime(DateTimeUtil.msToDateStr(saleTicketThird.getTradeDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
+                saleTicket.setSaleTicketNum(saleTicketThird.getTicketNoCount());
+                saleTicket.setUnitPrice(saleTicketThird.getTicketModelPrice());
+                saleTicket.setTotalPrice(saleTicketThird.getPaySum());
+                saleTicket.setChannel(saleTicketThird.getBillType());
+                saleTicket.setProvinceName(saleTicketThird.getAreaName());
                 saleTicket.setTradeDetailId(saleTicketThird.getTradeDetailId());
                 if (null == id) {
                     addTicket.add(saleTicket);
                 } else {
                     saleTicket.setId(id);
-                    saleTicket.setModifiedTime(LocalDate.now() + " " + LocalTime.now().withNano(0));
+                    saleTicket.setModifiedTime(DateTimeUtil.getNowTime());
                     updateTicket.add(saleTicket);
                 }
             });
         });
-        if (addTicket.size() > 0) {
-            RestMessage insertBatch = runner.insertBatch(SALE_TICKET_TABLE, JSON.toJSON(addTicket));
-            if (null != insertBatch) {
-                LOGGER.info("景点售票数据新增成功,共新增：" + addTicket.size() + "条数据");
-            } else {
-                LOGGER.info("景点售票数据新增失败,message=" + insertBatch);
-            }
-        } else {
-            LOGGER.info("没有产生景点售票数据;");
-        }
-        if (updateTicket.size() > 0) {
-            RestMessage updateBatch = runner.updateBatch(SALE_TICKET_TABLE, JSON.toJSON(updateTicket));
-            if (null != updateBatch) {
-                LOGGER.info("景点售票数据更新成功,共更新：" + updateTicket.size() + "条数据;");
-            } else {
-                LOGGER.info("景点售票数据更新失败,message=" + updateBatch);
-            }
-        } else {
-            LOGGER.info("没有景点售票数据更新;");
-        }
+        ticketCommon.saveOrUpdateSaleTicket(addTicket, updateTicket);
         if (!DateTimeUtil.compareDate(endTime, nowTime)) {
             syncSpotSaleInfo();
         }
@@ -296,9 +254,13 @@ public class TicketServiceImpl {
      * 同步景点检票
      */
     public void syncSpotCheckInfo() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<CheckTicket> addTicket = new ArrayList<>();
         List<CheckTicket> updateTicket = new ArrayList<>();
-        List<SpotArea> allSpotArea = getAllSpotArea();
+        List<SpotArea> allSpotArea = ticketCommon.getAllSpotArea();
         if (null == allSpotArea) {
             return;
         }
@@ -327,7 +289,7 @@ public class TicketServiceImpl {
             term.put("appCode", appCode);
             String path = "getSpotsCheckInfo.htm";
             JSONObject response = getResponse(term, path);
-            System.out.println("spot=" + spotArea.getSpotName() + ",SpotsCheckInfoResponse=" + response);
+            LOGGER.info("spot=" + spotArea.getSpotName() + ",SpotsCheckInfoResponse=" + response);
             ThirdData thirdData = JSONObject.toJavaObject(response, ThirdData.class);
             if (!"SUCCESS".equals(thirdData.getResult())) {
                 return;
@@ -339,55 +301,37 @@ public class TicketServiceImpl {
                 String checkDetailId = checkTicketThird.getCheckDetailId();
                 String id;
                 try {
-                    id = QueryUtil.checkRepeat(CHECK_TICKET_TABLE, "checkDetailId", checkDetailId);
+                    id = queryUtil.checkRepeat(TicketTables.CHECK_TICKET_TABLE, "check_detail_id", checkDetailId);
                 } catch (Exception e) {
+                    LOGGER.error("syncSpotCheckInfo-checkRepeat()异常,error=", e);
                     return;
                 }
                 CheckTicket checkTicket = new CheckTicket();
-                checkTicket.setScenicAreaCode(checkTicketThird.getScenicAreaCode());
-                checkTicket.setParkFullName(checkTicketThird.getParkFullName());
-                checkTicket.setClientType(checkTicketThird.getClientType());
+                checkTicket.setScenicName(checkTicketThird.getScenicAreaCode());
+                checkTicket.setSpotName(checkTicketThird.getParkFullName());
+                checkTicket.setTouristType(checkTicketThird.getClientType());
                 checkTicket.setOperatorName(checkTicketThird.getOperatorName());
                 checkTicket.setTicketModelName(checkTicketThird.getTicketModelName());
                 checkTicket.setTicketKindName(checkTicketThird.getTicketKindName());
-                checkTicket.setTakeTicketPlace(checkTicketThird.getTakeTicketPlace());
-                checkTicket.setTradeDate(DateTimeUtil.msToDateStr(checkTicketThird.getTradeDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
+                checkTicket.setSaleTicketPlace(checkTicketThird.getTakeTicketPlace());
+                checkTicket.setSaleTime(DateTimeUtil.msToDateStr(checkTicketThird.getTradeDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
                 checkTicket.setUseTime(DateTimeUtil.msToDateStr(checkTicketThird.getUseTime(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
-                checkTicket.setCheckPlace(checkTicketThird.getCheckPlace());
-                checkTicket.setTicketModelPrice(checkTicketThird.getTicketModelPrice());
+                checkTicket.setCheckTicketPlace(checkTicketThird.getCheckPlace());
+                checkTicket.setSaleTicketPrice(checkTicketThird.getTicketModelPrice());
                 checkTicket.setSaleModel(checkTicketThird.getSaleModel());
-                checkTicket.setAlreadyUseCount(checkTicketThird.getAlreadyUseCount());
+                checkTicket.setUseNum(checkTicketThird.getAlreadyUseCount());
                 checkTicket.setGateNo(checkTicketThird.getGateNo());
                 checkTicket.setCheckDetailId(checkTicketThird.getCheckDetailId());
                 if (null == id) {
                     addTicket.add(checkTicket);
                 } else {
                     checkTicket.setId(id);
-                    checkTicket.setModifiedTime(LocalDate.now() + " " + LocalTime.now().withNano(0));
+                    checkTicket.setModifiedTime(DateTimeUtil.getNowTime());
                     updateTicket.add(checkTicket);
                 }
             });
         });
-        if (addTicket.size() > 0) {
-            RestMessage insertBatch = runner.insertBatch(CHECK_TICKET_TABLE, JSON.toJSON(addTicket));
-            if (null != insertBatch) {
-                LOGGER.info("景点检票数据新增成功,共新增：" + addTicket.size() + "条数据");
-            } else {
-                LOGGER.info("景点检票数据新增失败,message=" + insertBatch);
-            }
-        } else {
-            LOGGER.info("没有产生景点检票数据;");
-        }
-        if (updateTicket.size() > 0) {
-            RestMessage updateBatch = runner.updateBatch(CHECK_TICKET_TABLE, JSON.toJSON(updateTicket));
-            if (null != updateBatch) {
-                LOGGER.info("景点检票数据更新成功,共更新：" + updateTicket.size() + "条数据;");
-            } else {
-                LOGGER.info("景点检票数据更新失败,message=" + updateBatch);
-            }
-        } else {
-            LOGGER.info("没有景点检票数据更新;");
-        }
+        ticketCommon.saveOrUpdateCheckTicket(addTicket, updateTicket);
         if (!DateTimeUtil.compareDate(endTime, nowTime)) {
             syncSpotCheckInfo();
         }
@@ -397,9 +341,13 @@ public class TicketServiceImpl {
      * 同步电子订单
      */
     public void syncWebOrderInfo() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<SaleTicket> addTicket = new ArrayList<>();
         List<SaleTicket> updateTicket = new ArrayList<>();
-        List<ScenicArea> scenicAreas = getAllScenicArea();
+        List<ScenicArea> scenicAreas = ticketCommon.getAllScenicArea();
         if (null == scenicAreas) {
             return;
         }
@@ -422,7 +370,7 @@ public class TicketServiceImpl {
             term.put("sign", sign);
             String path = "getWebOrderInfo.htm";
             JSONObject response = getResponse(term, path);
-            System.out.println("WebOrderInfoResponse=" + response);
+            LOGGER.info("WebOrderInfoResponse=" + response);
             ThirdData thirdData = JSON.toJavaObject(response, ThirdData.class);
             if (!"SUCCESS".equals(thirdData.getResult())) {
                 return;
@@ -434,53 +382,35 @@ public class TicketServiceImpl {
                 String billDetailId = webSaleTicketThird.getBillDetailId();
                 String id;
                 try {
-                    id = QueryUtil.checkRepeat(SALE_TICKET_TABLE, "detailId", billDetailId);
+                    id = queryUtil.checkRepeat(TicketTables.SALE_TICKET_TABLE, "sale_detail_id", billDetailId);
                 } catch (Exception e) {
+                    LOGGER.error("syncWebOrderInfo-checkRepeat()异常,error=", e);
                     return;
                 }
                 SaleTicket saleTicket = new SaleTicket();
                 saleTicket.setTradeDetailId(billDetailId);
-                saleTicket.setTradeDate(DateTimeUtil.msToDateStr(webSaleTicketThird.getBillDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
-                saleTicket.setTicketNoCount(webSaleTicketThird.getTicketCount());
-                saleTicket.setTicketModelPrice(webSaleTicketThird.getSellPrice());
+                saleTicket.setSaleTime(DateTimeUtil.msToDateStr(webSaleTicketThird.getBillDate(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
+                saleTicket.setSaleTicketNum(webSaleTicketThird.getTicketCount());
+                saleTicket.setUnitPrice(webSaleTicketThird.getSellPrice());
                 saleTicket.setTicketModelName(webSaleTicketThird.getTicketModelName());
-                saleTicket.setScenicAreaCode(webSaleTicketThird.getScenicName());
-                saleTicket.setPaySum(webSaleTicketThird.getTicketPrice());
+                saleTicket.setScenicName(webSaleTicketThird.getScenicName());
+                saleTicket.setTotalPrice(webSaleTicketThird.getTicketPrice());
                 saleTicket.setUserName(webSaleTicketThird.getUserName());
-                saleTicket.setTel(webSaleTicketThird.getTel());
-                saleTicket.setCerNo(webSaleTicketThird.getCerNo());
-                saleTicket.setBillNo(webSaleTicketThird.getBillNo());
-                saleTicket.setTravelDateTime(DateTimeUtil.msToDateStr(webSaleTicketThird.getTravelDateTime(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
-                saleTicket.setBillType(webSaleTicketThird.getClientName());
+                saleTicket.setPhoneNumber(webSaleTicketThird.getTel());
+                saleTicket.setIdCard(webSaleTicketThird.getCerNo());
+                saleTicket.setTicketNo(webSaleTicketThird.getBillNo());
+                saleTicket.setUseTime(DateTimeUtil.msToDateStr(webSaleTicketThird.getTravelDateTime(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
+                saleTicket.setChannel(webSaleTicketThird.getClientName());
                 if (null == id) {
                     addTicket.add(saleTicket);
                 } else {
                     saleTicket.setId(id);
-                    saleTicket.setModifiedTime(LocalDate.now() + " " + LocalTime.now().withNano(0));
+                    saleTicket.setModifiedTime(DateTimeUtil.getNowTime());
                     updateTicket.add(saleTicket);
                 }
             });
         });
-        if (addTicket.size() > 0) {
-            RestMessage insertBatch = runner.insertBatch(SALE_TICKET_TABLE, JSON.toJSON(addTicket));
-            if (null != insertBatch) {
-                LOGGER.info("电子订单数据新增成功,共新增：" + addTicket.size() + "条数据");
-            } else {
-                LOGGER.info("电子订单数据新增失败,message=" + insertBatch);
-            }
-        } else {
-            LOGGER.info("没有产生电子订单数据;");
-        }
-        if (updateTicket.size() > 0) {
-            RestMessage updateBatch = runner.updateBatch(SALE_TICKET_TABLE, JSON.toJSON(updateTicket));
-            if (null != updateBatch) {
-                LOGGER.info("电子订单数据更新成功,共更新：" + updateTicket.size() + "条数据;");
-            } else {
-                LOGGER.info("电子订单数据更新失败,message=" + updateBatch);
-            }
-        } else {
-            LOGGER.info("没有电子订单数据更新;");
-        }
+        ticketCommon.saveOrUpdateSaleTicket(addTicket, updateTicket);
         if (!DateTimeUtil.compareDate(endTime, nowTime)) {
             syncWebOrderInfo();
         }
@@ -490,9 +420,13 @@ public class TicketServiceImpl {
      *
      */
     public void syncWebCheckInfo() {
+        Boolean aBoolean = checkParam();
+        if (!aBoolean) {
+            return;
+        }
         List<CheckTicket> addTicket = new ArrayList<>();
         List<CheckTicket> updateTicket = new ArrayList<>();
-        List<ScenicArea> scenicAreas = getAllScenicArea();
+        List<ScenicArea> scenicAreas = ticketCommon.getAllScenicArea();
         if (null == scenicAreas) {
             return;
         }
@@ -518,7 +452,7 @@ public class TicketServiceImpl {
             term.put("sign", sign);
             String path = "getWebCheckInfo.htm";
             JSONObject response = getResponse(term, path);
-            System.out.println("WebCheckInfoResponse=" + response);
+            LOGGER.info("WebCheckInfoResponse=" + response);
             ThirdData thirdData = JSON.toJavaObject(response, ThirdData.class);
             if (!"SUCCESS".equals(thirdData.getResult())) {
                 return;
@@ -530,47 +464,29 @@ public class TicketServiceImpl {
                 String billCheckDetailId = webCheckTicketThird.getBillCheckDetailId();
                 String id;
                 try {
-                    id = QueryUtil.checkRepeat(CHECK_TICKET_TABLE, "checkDetailId", billCheckDetailId);
+                    id = queryUtil.checkRepeat(TicketTables.CHECK_TICKET_TABLE, "check_detail_id", billCheckDetailId);
                 } catch (Exception e) {
+                    LOGGER.error("syncWebCheckInfo-checkRepeat()异常,error=", e);
                     return;
                 }
                 CheckTicket checkTicket = new CheckTicket();
                 checkTicket.setCheckDetailId(billCheckDetailId);
                 checkTicket.setTicketNo(webCheckTicketThird.getBillNo());
-                checkTicket.setCheckPlace(webCheckTicketThird.getCheckName());
+                checkTicket.setCheckTicketPlace(webCheckTicketThird.getCheckName());
                 checkTicket.setTicketModelName(webCheckTicketThird.getTicketModelName());
-                checkTicket.setAlreadyUseCount(webCheckTicketThird.getCheckNum());
-                checkTicket.setCheckWay(webCheckTicketThird.getCheckType());
+                checkTicket.setUseNum(webCheckTicketThird.getCheckNum());
+                checkTicket.setCheckType(webCheckTicketThird.getCheckType());
                 checkTicket.setUseTime(DateTimeUtil.msToDateStr(webCheckTicketThird.getUseTime(), DateTimeUtil.YYYY_MM_DD_HH_MM_SS));
                 if (null == id) {
                     addTicket.add(checkTicket);
                 } else {
                     checkTicket.setId(id);
-                    checkTicket.setModifiedTime(LocalDate.now() + " " + LocalTime.now().withNano(0));
+                    checkTicket.setModifiedTime(DateTimeUtil.getNowTime());
                     updateTicket.add(checkTicket);
                 }
             });
         });
-        if (addTicket.size() > 0) {
-            RestMessage insertBatch = runner.insertBatch(CHECK_TICKET_TABLE, JSON.toJSON(addTicket));
-            if (null != insertBatch) {
-                LOGGER.info("电子订单使用数据新增成功,共新增：" + addTicket.size() + "条数据");
-            } else {
-                LOGGER.info("电子订单使用数据新增失败,message=" + insertBatch);
-            }
-        } else {
-            LOGGER.info("没有产生电子订单使用数据;");
-        }
-        if (updateTicket.size() > 0) {
-            RestMessage updateBatch = runner.updateBatch(CHECK_TICKET_TABLE, JSON.toJSON(updateTicket));
-            if (null != updateBatch) {
-                LOGGER.info("电子订单使用数据更新成功,共更新：" + updateTicket.size() + "条数据;");
-            } else {
-                LOGGER.info("电子订单使用数据更新失败,message=" + updateBatch);
-            }
-        } else {
-            LOGGER.info("没有电子订单使用数据更新;");
-        }
+        ticketCommon.saveOrUpdateCheckTicket(addTicket, updateTicket);
         if (!DateTimeUtil.compareDate(endTime, nowTime)) {
             syncWebCheckInfo();
         }
@@ -585,30 +501,30 @@ public class TicketServiceImpl {
         StringBuffer buffer = new StringBuffer();
         switch (type) {
             case "spotSale":
-                buffer.append("select orderTime as beginTime")
+                buffer.append("select sale_time as beginTime")
                         .append(" from ")
-                        .append(SALE_TICKET_TABLE)
+                        .append(TicketTables.SALE_TICKET_TABLE)
                         .append(" where is_deleted='N' and user_name is null")
-                        .append(" order by orderTime desc");
+                        .append(" order by sale_time desc");
                 break;
             case "webSale":
-                buffer.append("select orderTime as beginTime")
+                buffer.append("select sale_time as beginTime")
                         .append(" from ")
-                        .append(SALE_TICKET_TABLE)
+                        .append(TicketTables.SALE_TICKET_TABLE)
                         .append(" where is_deleted='N' and user_name is not null")
-                        .append(" order by orderTime desc");
+                        .append(" order by sale_time desc");
                 break;
             case "spotCheck":
                 buffer.append("select use_time as beginTime")
                         .append(" from ")
-                        .append(CHECK_TICKET_TABLE)
+                        .append(TicketTables.CHECK_TICKET_TABLE)
                         .append(" where is_deleted='N' and operator_name is not null")
                         .append(" order by use_time desc");
                 break;
             case "webCheck":
                 buffer.append("select use_time as beginTime")
                         .append(" from ")
-                        .append(CHECK_TICKET_TABLE)
+                        .append(TicketTables.CHECK_TICKET_TABLE)
                         .append(" where is_deleted='N' and operator_name is null")
                         .append(" order by use_time desc");
                 break;
@@ -630,46 +546,6 @@ public class TicketServiceImpl {
         return beginTime;
     }
 
-    /**
-     * 获取所有的景区
-     *
-     * @return
-     */
-    public List<ScenicArea> getAllScenicArea() {
-        RequestExample example = new RequestExample(Integer.MAX_VALUE, 1);
-        RequestExample.Criteria criteria = example.create();
-        RequestExample.Param param = example.createParam();
-        param.addTerm("is_deleted", "N");
-        criteria.getMust().add(param);
-        List<ScenicArea> data = null;
-        try {
-            Pagination<ScenicArea> pagination = runner.queryListByExample(ScenicArea.class, SCENIC_TABLE, example);
-            if (pagination.getCount() > 0) {
-                data = pagination.getData();
-            }
-        } catch (Exception e) {
-            LOGGER.error("获取所有景区信息异常;error=", e);
-        }
-        return data;
-    }
-
-    public List<SpotArea> getAllSpotArea() {
-        RequestExample example = new RequestExample(Integer.MAX_VALUE, 1);
-        RequestExample.Criteria criteria = example.create();
-        RequestExample.Param param = example.createParam();
-        param.addTerm("is_deleted", "N");
-        criteria.getMust().add(param);
-        List<SpotArea> spots = null;
-        try {
-            Pagination<SpotArea> pagination = runner.queryListByExample(SpotArea.class, SPOT_TABLE, example);
-            if (pagination.getCount() > 0) {
-                spots = pagination.getData();
-            }
-        } catch (Exception e) {
-            LOGGER.error("获取所有景点信息异常,error=", e);
-        }
-        return spots;
-    }
 
     /**
      * @param term
@@ -685,13 +561,11 @@ public class TicketServiceImpl {
             try {
                 response = JSONObject.parseObject(result);
             } catch (Exception e) {
-                LOGGER.error(path + "接口返回数据异常,JSON 解析失败;response=" + response);
+                LOGGER.error(path + "接口返回数据异常,JSON 解析失败;response=", response);
             }
         } else {
             LOGGER.info(path + "接口请求异常;result=" + result);
         }
         return response;
     }
-
-
 }

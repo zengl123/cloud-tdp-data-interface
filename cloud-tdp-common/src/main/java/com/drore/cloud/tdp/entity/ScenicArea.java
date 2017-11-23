@@ -16,7 +16,7 @@ public class ScenicArea extends BaseEntity{
     @JSONField(name = "scenic_name")
     @SerializedName(value ="scenic_name")
     private String scenicName;
-    @JSONField(name = "scenic_code")
-    @SerializedName(value = "scenic_code")
+    @JSONField(name = "scenic_no")
+    @SerializedName(value = "scenic_no")
     private String scenicNo;
 }

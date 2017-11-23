@@ -26,6 +26,11 @@
         <module>cloud-tdp-hikvision-mq7600</module>
         <module>cloud-tdp-ticket-shenda-v1</module>
         <module>cloud-tdp-camera-hikvision9600</module>
+        <module>cloud-tdp-carPark-hikvision9600</module>
+        <module>cloud-tdp-kpi-mobile</module>
+        <module>cloud-tdp-camera-traffic-vion</module>
+        <module>cloud-tdp-environment-puhou</module>
+        <module>cloud-tdp-gps-hikvision</module>
     </modules>
     <!-- 设定除中央仓库(repo1.maven.org/maven2/)外的其他仓库,按设定顺序进行查找.-->
     <repositories>
@@ -65,6 +70,11 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
         <!-- 实体类自动生成getting和setting方法,以及equals,hashCode,toString等-->
         <dependency>
             <groupId>org.projectlombok</groupId>

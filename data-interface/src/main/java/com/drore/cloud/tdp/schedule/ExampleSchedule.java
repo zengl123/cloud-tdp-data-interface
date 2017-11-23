@@ -1,10 +1,14 @@
 package com.drore.cloud.tdp.schedule;
 
+import com.drore.cloud.tdp.utils.HttpClientUtil;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -21,6 +25,9 @@ import java.time.LocalTime;
 public class ExampleSchedule {
     @Scheduled(cron = "${exampleQuartz}")
     public void exampleQuartz() {
-        System.out.println("nowDay= " + LocalDate.now() +" "+ LocalTime.now().withNano(0));
+        String url = "http://www.baidu.com";
+        String get = HttpClientUtil.httpGet(url);
+        System.out.println("get = " + get);
+        System.out.println("nowDay= " + LocalDate.now() + " " + LocalTime.now().withNano(0));
     }
 }

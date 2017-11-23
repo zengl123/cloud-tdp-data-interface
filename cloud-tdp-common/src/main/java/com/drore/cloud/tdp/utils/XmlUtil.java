@@ -2,6 +2,8 @@ package com.drore.cloud.tdp.utils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import net.sf.json.JSON;
+import net.sf.json.JSONSerializer;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -10,10 +12,19 @@ import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import org.json.XML;
+import net.sf.json.xml.XMLSerializer;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by zsj on 2016/12/24.
@@ -92,21 +103,17 @@ public class XmlUtil {
         materialNo.setText(obj.getString("materialNo"));
         Element destType = transData.addElement("destType");
         destType.setText("byTerminal");
-
         Element terminalNoList = transData.addElement("TerminalNoList");
         JSONArray terminalNoArray = obj.getJSONArray("terminalNoList");
         for (int i = 0; i < terminalNoArray.size(); i++) {
             Element terminalNo = terminalNoList.addElement("terminalNo");
             terminalNo.setText(terminalNoArray.getString(i));
         }
-
         Element dataType = transData.addElement("dataType");
         dataType.setText("data");
-
         Element sendData = transData.addElement("SendData");
         Element refreshType = sendData.addElement("refreshType");
         refreshType.setText("all");
-
         Element itemDataList = sendData.addElement("ItemDataList");
         JSONArray columnList = obj.getJSONArray("columnList");
         for (int j = 0; j < columnList.size(); j++) {
@@ -131,20 +138,26 @@ public class XmlUtil {
      * @return
      */
     public static JSONObject xml2json(String xmlString) {
-        JSONObject object;
+        JSONObject object = null;
         try {
             object = JSONObject.parseObject(String.valueOf(XML.toJSONObject(xmlString)));
         } catch (Exception e) {
             e.printStackTrace();
-            object = new JSONObject();
         }
         return object;
     }
 
-    public static void main(String[] args) {
-        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><EventNotify><event_log_id>B1A4330A-2C0A-4F44-9E3A-6431F28E3189</event_log_id><event_type>327681</event_type><status>3</status><start_time>2017-08-01 15:43:30</start_time><stop_time></stop_time><event_config_id>GJ_20170705_0005</event_config_id><event_name>${猢狲岩}_告警</event_name><event_level>1</event_level><object_type>502200</object_type><object_index_code>001262</object_index_code><object_name>猢狲岩_防区通道3</object_name><org_index>001197</org_index><org_name>sos报警柱</org_name><describe>????????????????</describe><ext_info>????????????????</ext_info><pic_data></pic_data></EventNotify>";
-        System.out.println(" = " + xml2json(xml));
+    public static String json2xml(String objectString) {
+        XMLSerializer serializer = new XMLSerializer();
+        net.sf.json.JSONObject jsonObject = net.sf.json.JSONObject.fromObject(objectString);
+        String xml = serializer.write(jsonObject);
+        return xml;
+    }
 
+    public static JSONObject xmlToJson(String xmlString) {
+        XMLSerializer xmlSerializer = new XMLSerializer();
+        JSON json = xmlSerializer.read(xmlString);
+        return JSONObject.parseObject(json.toString());
     }
 
 }

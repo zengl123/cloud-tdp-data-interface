@@ -23,11 +23,11 @@ import java.util.Map;
 @Component
 public class QueryUtil {
 
-    private CloudQueryRunner runner = CloudQueryRunnerUtil.getCloudQueryRunner();
+    //private CloudQueryRunner runner = CloudQueryRunnerUtil.getCloudQueryRunner();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryUtil.class);
-//    @Autowired
-//    private  CloudQueryRunner runner;
+    @Autowired
+    private CloudQueryRunner runner;
 
     public JSONObject queryConfigByFactoryModelName(String factoryModelName) {
         StringBuffer buffer = new StringBuffer();
@@ -35,10 +35,9 @@ public class QueryUtil {
                 .append("from device_specification ")
                 .append("where factory_model_name='").append(factoryModelName).append("' ")
                 .append("and is_deleted='N'");
-        Pagination<DeviceSpecification> pagination;
         JSONObject object = null;
-        pagination = runner.sql(DeviceSpecification.class, buffer.toString(), 1, 1);
         try {
+            Pagination<DeviceSpecification> pagination = runner.sql(DeviceSpecification.class, buffer.toString(), 1, 1);
             String config = pagination.getData().get(0).getConfig();
             object = JSONObject.parseObject(config);
         } catch (Exception e) {

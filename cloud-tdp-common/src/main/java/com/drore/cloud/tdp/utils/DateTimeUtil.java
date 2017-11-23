@@ -7,9 +7,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * 描述:日期时间工具类
@@ -30,17 +28,23 @@ public class DateTimeUtil {
      * @param pattern
      * @return
      */
-    private static DateTimeFormatter getDateFormat(String pattern) {
+    public static DateTimeFormatter getDateFormat(String pattern) {
         return DateTimeFormatter.ofPattern(pattern);
     }
 
     //TODO//////////////////////基本转换///////////////////////////////基本转换/////////////////////////////////////////
 
-    public static String getNowTime(){
+    /**
+     * 获取当前时间
+     *
+     * @return
+     */
+    public static String getNowTime() {
         DateTimeFormatter f = getDateFormat(YYYY_MM_DD_HH_MM_SS);
         String now = LocalDateTime.now().withNano(0).format(f);
         return now;
     }
+
     /**
      * data转string
      *
@@ -134,6 +138,7 @@ public class DateTimeUtil {
 
     /**
      * 获取n秒前/后时间
+     *
      * @param time
      * @param second
      * @return 返回格式 yyyy-MM-dd HH:mm:ss
@@ -161,12 +166,13 @@ public class DateTimeUtil {
 
     /**
      * 获取n分钟前/后时间字符串
+     *
      * @param time
-     * @param minute 分钟数
+     * @param minute  分钟数
      * @param pattern 格式
      * @return
      */
-    public static String timeAddMinusMinutes(String time, int minute,String pattern) {
+    public static String timeAddMinusMinutes(String time, int minute, String pattern) {
         DateTimeFormatter f = DateTimeFormatter.ofPattern(pattern);
         LocalDateTime localDateTime = minute > 0 ? LocalDateTime.parse(time, f).plusMinutes(minute) : LocalDateTime.parse(time, f).minusMinutes(Math.abs(minute));
         return localDateTime.format(f);
@@ -202,13 +208,14 @@ public class DateTimeUtil {
     }
 
     /**
-     *  获取n天前/后日期
-     * @param date 日期
-     * @param day 天数
+     * 获取n天前/后日期
+     *
+     * @param date    日期
+     * @param day     天数
      * @param pattern 格式
      * @return
      */
-    public static String dateAddMinusDays(String date, int day,String pattern) {
+    public static String dateAddMinusDays(String date, int day, String pattern) {
         DateTimeFormatter f = DateTimeFormatter.ofPattern(pattern);
         LocalDateTime localDateTime = day > 0 ? LocalDateTime.parse(date, f).plusDays(day) : LocalDateTime.parse(date, f).minusDays(Math.abs(day));
         return localDateTime.format(f);
@@ -226,14 +233,29 @@ public class DateTimeUtil {
     }
 
     /**
+     * 获取本周第一天
+     *
+     * @return
+     */
+    public static String firstDayOfWeek() {
+        Calendar c = new GregorianCalendar();
+        c.setFirstDayOfWeek(Calendar.MONDAY);
+        c.setTime(new Date());
+        c.set(Calendar.DAY_OF_WEEK, c.getFirstDayOfWeek()); // Monday
+        Date time = c.getTime();
+        String str = dateToStr(time, YYYY_MM_DD_HH_MM_SS);
+        return str;
+    }
+
+    /**
      * 获取上个月第一天
      *
      * @return
      */
-    public static String firstDayOfLastMonth() {
-        LocalDate localDate = LocalDate.now();
-        LocalDate date = localDate.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
-        return date.format(getDateFormat(YYYY_MM_DD));
+    public static String firstDayOfLastMonth(String pattern) {
+        LocalDateTime localDate = LocalDateTime.now();
+        LocalDateTime date = localDate.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+        return date.format(getDateFormat(pattern));
     }
 
     /**
@@ -323,6 +345,20 @@ public class DateTimeUtil {
         }
         return dateList;
     }
+
+    /**
+     * 获取一天指定时间段的各个时间
+     *
+     * @return
+     */
+    public static List<String> hourOfDay(int begin, int end) {
+        List<String> list = Arrays.asList("00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23");
+        List<String> hours = new ArrayList<>();
+        for (int i = begin; i <= end; i++) {
+            hours.add(list.get(i));
+        }
+        return hours;
+    }
 //TODO///////////////////////////比较////////////相差////////////排序/////////////////////////////////////////////////////////////
 
     /**
@@ -338,6 +374,19 @@ public class DateTimeUtil {
         return longStr1 >= longStr2;
     }
 
+    /**
+     * 获取当前时间前5分钟时间(时间间隔5分钟)
+     *
+     * @param pattern 时间格式
+     * @return
+     */
+    public static String getNowMinuteBefore5(String pattern) {
+        LocalDateTime localDateTime = LocalDateTime.now().withNano(0);
+        int minute = localDateTime.getMinute();
+        minute = Math.round(minute / 5 * 5);//计算10的整数分钟
+        String time = localDateTime.withMinute(minute).withSecond(0).minusMinutes(5).format(DateTimeUtil.getDateFormat(pattern));
+        return time;
+    }
 
     public static void main(String[] args) {
         //System.out.println("dateToStr() = " + dateToStr(new Date(),"yyyy-MM-dd HH:mm:ss"));
@@ -361,14 +410,16 @@ public class DateTimeUtil {
         //System.out.println("s = " + s);
 
 
-        String s = timeAddMinusMinutes("2017/01/09 12:09:10", 1,"yyyy/MM/dd HH:mm:ss");
-        System.out.println("s = " + s);
-        String s1 = timeAddMinusSeconds("2017-01-09 12:09:10", 10);
-
-        System.out.println("s1 = " + s1);
-
-        String s2 = dateAddMinusDays("2017-01-09 12:09:10", 1, "yyyy-MM-dd HH:mm:ss");
-        System.out.println("s2 = " + s2);
-        System.out.println("getNowTime() = " + getNowTime());
+//        String s = timeAddMinusMinutes("2017/01/09 12:09:10", 1, "yyyy/MM/dd HH:mm:ss");
+//        System.out.println("s = " + s);
+//        String s1 = timeAddMinusSeconds("2017-01-09 12:09:10", 10);
+//
+//        System.out.println("s1 = " + s1);
+//
+//        String s2 = dateAddMinusDays("2017-01-09 12:09:10", 1, "yyyy-MM-dd HH:mm:ss");
+//        System.out.println("s2 = " + s2);
+//        System.out.println("getNowTime() = " + getNowTime());
+        String firstDayOfLastMonth = firstDayOfLastMonth("yyyy/MM/dd 00:00:00");
+        System.out.println("firstDayOfLastMonth = " + firstDayOfLastMonth);
     }
 }

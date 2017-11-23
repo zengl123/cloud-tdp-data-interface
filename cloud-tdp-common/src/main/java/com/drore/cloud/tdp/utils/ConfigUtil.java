@@ -14,7 +14,7 @@ public class ConfigUtil {
     public static PropertiesConfiguration getConfig() {
         PropertiesConfiguration pc = null;
         try {
-            pc = new PropertiesConfiguration("application.properties");
+            pc = new PropertiesConfiguration("config.properties");
         } catch (ConfigurationException e) {
             e.printStackTrace();
         }

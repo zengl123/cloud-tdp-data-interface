@@ -16,10 +16,10 @@ public class SpotArea extends BaseEntity{
     @JSONField(name = "spot_name")
     @SerializedName(value = "spot_name")
     private String spotName;//景点名称
-    @JSONField(name = "spot_code")
-    @SerializedName(value = "spot_code")
+    @JSONField(name = "spot_no")
+    @SerializedName(value = "spot_no")
     private String spotNo;//景点编号
-    @JSONField(name = "scenic_code")
-    @SerializedName(value = "scenic_code")
+    @JSONField(name = "scenic_no")
+    @SerializedName(value = "scenic_no")
     private String scenicNo;//所属景区编号
 }
